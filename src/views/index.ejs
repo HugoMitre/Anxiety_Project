@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset = "UTF-8">
+    <meta http-equiv = "X-UA-Compatible" content = "IE=edge">
+    <meta name = "viewport" content = "width=device-width, initial-scale=1.0">
+    <title>Arduino Sensor</title>
+</head>
+<body>
+    <h1>Formulario</h1>
+    <label for = "sujeto">Sujeto: </label>
+    <input type = "text" id="sujeto" name = "sujeto"><br><br>
+
+    <label for="fase">Fase:</label>
+    <select name="fase" id="fase">
+        <option value = "relx1">Relajación Nivel 1</option>
+        <option value = "anxt1">Ansiedad Nivel 1</option>
+        <option value = "relx2">Relajación Nivel 2</option>
+        <option value = "anxt2">Ansiedad Nivel 2</option>
+        <option value = "relx3">Relajación Nivel 3</option>
+        <option value = "anxt3">Ansiedad Nivel 3</option>
+    </select><br><br>
+
+    <button type = "button" onclick = "enviarFormulario()">Enviar</button>
+
+    <script>
+        document.getElementById('fase').value = "";
+
+        function enviarFormulario(){
+            var sujeto = document.getElementById('sujeto').value;
+            var fase = document.getElementById('fase').value;
+            alert(suejto + ' ' + fase);
+            // Aqui va el código para enviar la solicitud POST a MongoAtlas
+
+            // Limpia los campos de texto y la lista desplegable después de enviar el formulario
+            //document.getElementById('sujeto').value = "";
+            document.getElementById('fase').value = "";
+            pruebameEsta(sujeto, fase);
+        }
+    </script>
+</body>
+</html>
