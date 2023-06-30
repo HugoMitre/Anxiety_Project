@@ -1,8 +1,4 @@
-# esp_to_mongo_API
-
-##################################################
-#  HERRAMIENTA PARA LECTURA DE DATOS DE ESP8266  #
-##################################################
+#  HERRAMIENTA PARA LECTURA DE DATOS DE ESP8266  
 
 API para almacenamiento de datos en MongoDB. Código de ESP8266 par leer datos de sensor y consumir API.
 Ejecutar el archivo por lotes start_app.bat con el que se ejecutan 2 terminales:
