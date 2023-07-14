@@ -39,8 +39,8 @@
 #include <ESP32Time.h>
 
 // WIFI
-const char* ssid = "INFINITUM2613_2.4";
-const char* password =  "MGVfuQ2nwP";
+const char* ssid = "Visitas";
+const char* password =  "Cimat2023";
 const char* serverAddress = "192.168.1.77";
 const int serverPort = 3000;
 const char* apiEndpoint = "/api/reads";
