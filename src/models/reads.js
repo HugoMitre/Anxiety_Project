@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
 const readsSchema = new Schema({
-    // time: { type: String },
+    time: { type: String },
     red: { type: Number },
     ir: { type: Number },
     hr: { type: Number },

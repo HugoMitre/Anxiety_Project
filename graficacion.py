@@ -13,7 +13,7 @@ fig, ax = plt.subplots()
 # Función para actualizar el gráfico en tiempo real
 def update_plot():
     # Obtener los datos más recientes de la base de datos
-    latest_data = collection.find().limit(100)
+    latest_data = collection.find().sort('time', pymongo.ASCENDING).limit(100)
     x = []
     # y = []
     for data in latest_data:

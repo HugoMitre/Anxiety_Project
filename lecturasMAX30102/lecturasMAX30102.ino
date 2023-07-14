@@ -12,6 +12,13 @@
   -SDA = D2 (or SDA)
   -SCL = D1 (or SCL) 
   -INT = Not connected
+
+  Hardware Connections (ESP32):
+  -5V = 5V (3.3V is allowed)
+  -GND = GND
+  -SDA = D21 (or SDA)
+  -SCL = D22 (or SCL) 
+  -INT = Not connected
  
   The MAX30105 Breakout can handle 5V or 3.3V I2C logic. We recommend powering the board with 5V
   but it will also run at 3.3V.
@@ -22,19 +29,28 @@
 #include "spo2_algorithm.h"
 #include <ArduinoJson.h>
 
-// LIBRERÍA  WIFI
-#include <WiFiClient.h>
-#include <ESP8266WiFiMulti.h>
-#include <ESP8266HTTPClient.h>
+// WIFI
+#include <WiFi.h>
+// #include <WiFiMulti.h>
+#include <HTTPClient.h>
 
-// Wifi
-const char* ssid = "Visitas";
-const char* password =  "Cimat2023";
-const char* serverAddress = "10.13.200.44";
+// REAL TIME (INTERN MODULE)
+#include "rtc_datetime.h"
+#include <ESP32Time.h>
+
+// WIFI
+const char* ssid = "INFINITUM2613_2.4";
+const char* password =  "MGVfuQ2nwP";
+const char* serverAddress = "192.168.1.77";
 const int serverPort = 3000;
 const char* apiEndpoint = "/api/reads";
 
+// WIFI CONNECTION
 WiFiClient client;
+
+ESP32Time rtc;  // Creat a structure type ESP32Time
+// Variables to get 
+int year, month, day, hour, minute, second;
 
 MAX30105 particleSensor;
 
@@ -56,16 +72,10 @@ int8_t validSPO2; //indicator to show if the SPO2 calculation is valid
 int32_t heartRate; //heart rate value
 int8_t validHeartRate; //indicator to show if the heart rate calculation is valid
 
-byte pulseLED = 11; //Must be on PWM pin
-byte readLED = 6; //Blinks with each data read
-
 void setup()
 {
   Serial.begin(115200); // initialize serial communication at 115200 bits per second:
  
-  // pinMode(pulseLED, OUTPUT);
-  // pinMode(readLED, OUTPUT);
-
   // Initialize sensor
   if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
   {
@@ -78,27 +88,58 @@ void setup()
   // Serial.read();
 
   byte ledBrightness = 60; //Options: 0=Off to 255=50mA
-  byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32
+  byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, _32
   byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
-  byte sampleRate = 400; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+  byte sampleRate = 800; //Options: 50, 100, 200, 400, 800, _1000, 1600, 3200
   int pulseWidth = 69; //Options: 69, 118, 215, 411
   int adcRange = 16384; //Options: 2048, 4096, 8192, 16384
 
   particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange); //Configure sensor with these settings
-
-  // INICIALIZACIÓN Y CONEXION AL WIFI
-  WiFiClient client;
+  
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
-  Serial.print("Conectando...");
+  Serial.print("Connecting...");
   
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
-  Serial.print("Conectado con éxito, mi IP es: ");
+  Serial.print("Successful connection, my IP: ");
   Serial.print(WiFi.localIP());
+
+  // GETTING REAL DATETIME
+  String jsonBody;
+  String response;
+
+  if (client.connect("worldtimeapi.org", 80)) {
+    // Enviar la solicitud GET a la API
+    client.println("GET /api/timezone/America/Mexico_City HTTP/1.1\r\n");
+    client.println("Host: worldtimeapi.org\r\n");
+    client.println("Connection: close");
+    client.println();
+    
+    delay(1000);
+    
+    // Leer la respuesta de la API
+    while (client.available()) { 
+      response = client.readString();
+    }
+    
+    int startIndex = response.indexOf('{');
+    int endIndex = response.lastIndexOf('}');
+    
+    // Extraer el cuerpo JSON de la respuesta
+    jsonBody = response.substring(startIndex, endIndex + 1);
+    extractTimeFromJson(jsonBody, year, month, day, hour, minute, second);
+
+    client.stop();
+  } else {
+    Serial.println("Error al establecer la conexión con la API");
+  }
+
+  rtc.setTime(second,minute,hour,day,month,year);
 }
 
 void loop()
@@ -126,20 +167,18 @@ void loop()
   //Continuously taking samples from MAX30102.  Heart rate and SpO2 are calculated every 1 second
   while (1)
   {
-    //dumping the first 25 sets of samples in the memory and shift the last 75 sets of samples to the top
-    for (byte i = 25; i < 100; i++)
+    //dumping the first 15 sets of samples in the memory and shift the last 75 sets of samples to the top
+    for (byte i = 15; i < 100; i++)
     {
-      redBuffer[i - 25] = redBuffer[i];
-      irBuffer[i - 25] = irBuffer[i];
+      redBuffer[i - 15] = redBuffer[i];
+      irBuffer[i - 15] = irBuffer[i];
     }
 
     //take 25 sets of samples before calculating the heart rate.
-    for (byte i = 75; i < 100; i++)
+    for (byte i = 85; i < 100; i++)
     {
       while (particleSensor.available() == false) //do we have new data?
         particleSensor.check(); //Check the sensor for new data
-
-      digitalWrite(readLED, !digitalRead(readLED)); //Blink onboard LED with every data read
 
       redBuffer[i] = particleSensor.getRed();
       irBuffer[i] = particleSensor.getIR();
@@ -147,7 +186,10 @@ void loop()
 
       //send samples and calculation result to terminal program through UART
 
-      Serial.print(F("RED: "));
+      Serial.print("TIME: ");
+      Serial.print(rtc.getTime() + "." + String(rtc.getMillis()));
+
+      Serial.print(F(", RED: "));
       Serial.print(redBuffer[i], DEC);
       Serial.print(F(", IR: "));
       Serial.print(irBuffer[i], DEC);
@@ -173,11 +215,11 @@ void loop()
       Serial.println(validSPO2, DEC);
       // Serial.println(F(";"));
 
-      // PETICION POST PARA ALMACENAR LOS DATOS EN LA BD
+      // REQUEST POST TO SAVE THE DATA IN DB
       if(WiFi.status() == WL_CONNECTED) {
-        // Tamaño máximo del JSON, ajusta según tus necesidades
         DynamicJsonDocument jsonDocument(1024);
 
+        jsonDocument["time"] = rtc.getTime() + "." + String(rtc.getMillis());
         jsonDocument["red"] = String(redBuffer[i]);
         jsonDocument["ir"] = String(irBuffer[i]);
         jsonDocument["hr"] = String(heartRate);
@@ -190,7 +232,7 @@ void loop()
 
         if (client.connect(serverAddress, serverPort)) {
           
-          // Crea la solicitud POST
+          // POST Request
           String request = "POST " + String(apiEndpoint) + " HTTP/1.1\r\n";
           request += "Host: " + String(serverAddress) + "\r\n";
           request += "Content-Type: application/json\r\n";
@@ -198,27 +240,26 @@ void loop()
           request += "Connection: close\r\n\r\n";
           request += jsonString;
 
-          // Envía la solicitud al servidor
+          // send request
           client.print(request);
 
-          // Lee y muestra la respuesta del servidora
+          // Request response
           while (client.available()) {
             String line = client.readStringUntil('\r');
             Serial.print(line);
           }
 
-          // Cierra la conexión
+          // Close connection
           client.stop();
         } else {
-          Serial.println("Error al conectar al servidor");
+          Serial.println("Error connecting the server");
         }
       }else{
-        Serial.println("Error en la conexión WIFI");
+        Serial.println("Error connecting WIFI");
       }
-      delay(2000);
     }
 
-    //After gathering 25 new samples recalculate HR and SP02
+    //After gathering 15 new samples recalculate HR and SP02
     maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
   }
 }
