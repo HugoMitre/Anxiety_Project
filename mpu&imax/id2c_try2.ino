@@ -65,22 +65,22 @@ byte pulseLED = 11; //Must be on PWM pin
 byte readLED = 6; //Blinks with each data read
 
 void setup() {
-  Serial.begin(115200);
+void setup() {
+Serial.begin(115200);
 
   // Initialize sensors
-  if(!Wire.begin(0x68))
-  {
+  Wire.begin();
+
+  if (!checkMPU6050Connection()) {
     Serial.println(F("MPU6050 was not found. Please check wiring/power."));
     while (1);
   }
-
-  if (!Wire.begin(0x57))
-  {
+  
+  if (!checkMAX30102Connection()) {
     Serial.println(F("MAX30105 was not found. Please check wiring/power."));
     while (1);
   }
   
-  Wire.begin();
   Wire.beginTransmission(MPU6050_addr);
   Wire.write(0x6B);
   Wire.write(0);
@@ -109,6 +109,18 @@ void setup() {
   Serial.print(WiFi.localIP());
 
 }
+
+// Functions to check sensor connections
+bool checkMPU6050Connection() {
+  Wire.beginTransmission(MPU6050_addr);
+  return (Wire.endTransmission() == 0);
+}
+
+bool checkMAX30102Connection() {
+  Wire.beginTransmission(MAX30102_adrr);
+  return (Wire.endTransmission() == 0);
+}
+
 void loop() {
   Wire.beginTransmission(MPU6050_addr);
   Wire.write(0x3B);
@@ -121,6 +133,140 @@ void loop() {
   GyroX = Wire.read() << 8 | Wire.read();
   GyroY = Wire.read() << 8 | Wire.read();
   GyroZ = Wire.read() << 8 | Wire.read();
+Serial.print("Giro: \t");
+  Serial.print(GyroX); Serial.print("\t");
+  Serial.print(GyroY); Serial.print("\t");
+  Serial.print(GyroZ); Serial.print("\t \t");
+  Serial.print("\n"); 
+  Serial.print("Giro: \t");
+  Serial.print(AccX); Serial.print("\t");
+  Serial.print(AccY); Serial.print("\t");
+  Serial.print(AccZ); Serial.print("\t \t");
+  Serial.print("\n"); 
+  delay(50);
+  
+ /*Wire.beginTransmission(MAX30102_adrr);
+  //Wire.write();
+  //Wire.endTransmission(false);
+
+  bufferLength = 100; //buffer length of 100 stores 4 seconds of samples running at 25sps
+
+  //read the first 100 samples, and determine the signal range
+  for (byte i = 0 ; i < bufferLength ; i++)
+  {
+    while (particleSensor.available() == false) //do we have new data?
+      particleSensor.check(); //Check the sensor for new data
+
+    redBuffer[i] = particleSensor.getRed();
+    irBuffer[i] = particleSensor.getIR();
+    particleSensor.nextSample(); //We're finished with this sample so move to next sample
+
+    Serial.print(redBuffer[i]);
+    Serial.print(F(","));
+    Serial.println(irBuffer[i]);
+  }
+
+  //calculate heart rate and SpO2 after first 100 samples (first 4 seconds of samples)
+  maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
+
+  //Continuously taking samples from MAX30102.  Heart rate and SpO2 are calculated every 1 second
+  while (1)
+  {
+    //dumping the first 25 sets of samples in the memory and shift the last 75 sets of samples to the top
+    for (byte i = 25; i < 100; i++)
+    {
+      redBuffer[i - 25] = redBuffer[i];
+      irBuffer[i - 25] = irBuffer[i];
+    }
+
+    //take 25 sets of samples before calculating the heart rate.
+    for (byte i = 75; i < 100; i++)
+    {
+      while (particleSensor.available() == false) //do we have new data?
+        particleSensor.check(); //Check the sensor for new data
+
+      digitalWrite(readLED, !digitalRead(readLED)); //Blink onboard LED with every data read
+
+      redBuffer[i] = particleSensor.getRed();
+      irBuffer[i] = particleSensor.getIR();
+      particleSensor.nextSample(); //We're finished with this sample so move to next sample
+
+      //send samples and calculation result to terminal program through UART
+
+      Serial.print(F("RED: "));
+      Serial.print(redBuffer[i], DEC);
+      Serial.print(F(", IR: "));
+      Serial.print(irBuffer[i], DEC);
+
+      // Serial.print(F("red="));
+      // Serial.print(redBuffer[i], DEC);
+      // Serial.print(F(", ir="));
+      // Serial.print(irBuffer[i], DEC);
+
+      Serial.print(F(", HR: "));
+      Serial.print(heartRate, DEC);
+      // Serial.print(F(","));
+
+      Serial.print(F(", HRvalid: "));
+      Serial.print(validHeartRate, DEC);
+      // Serial.print(F(","));
+
+      Serial.print(F(", SPO2: "));
+      Serial.print(spo2, DEC);
+      // Serial.print(F(","));
+
+      Serial.print(F(", SPO2Valid: "));
+      Serial.println(validSPO2, DEC);
+      // Serial.println(F(";"));
+
+      // PETICION POST PARA ALMACENAR LOS DATOS EN LA BD
+      if(WiFi.status() == WL_CONNECTED) {
+        // Tamaño máximo del JSON, ajusta según tus necesidades
+        DynamicJsonDocument jsonDocument(1024);
+
+        jsonDocument["red"] = String(redBuffer[i]);
+        jsonDocument["ir"] = String(irBuffer[i]);
+        jsonDocument["hr"] = String(heartRate);
+        jsonDocument["validHR"] = String(validHeartRate);
+        jsonDocument["spo2"] = String(spo2);
+        jsonDocument["validSpo2"] = String(validSPO2);
+
+        String jsonString;
+        serializeJson(jsonDocument, jsonString);
+
+        if (client.connect(serverAddress, serverPort)) {
+          
+          // Crea la solicitud POST
+          String request = "POST " + String(apiEndpoint) + " HTTP/1.1\r\n";
+          request += "Host: " + String(serverAddress) + "\r\n";
+          request += "Content-Type: application/json\r\n";
+          request += "Content-Length: " + String(jsonString.length()) + "\r\n";
+          request += "Connection: close\r\n\r\n";
+          request += jsonString;
+
+          // Envía la solicitud al servidor
+          client.print(request);
+
+          // Lee y muestra la respuesta del servidora
+          while (client.available()) {
+            String line = client.readStringUntil('\r');
+            Serial.print(line);
+          }
+
+          // Cierra la conexión
+          client.stop();
+        } else {
+          Serial.println("Error al conectar al servidor");
+        }
+      }else{
+        Serial.println("Error en la conexión WIFI");
+      }
+      delay(2000);
+    }
+
+    //After gathering 25 new samples recalculate HR and SP02
+    maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
+  }*/
 
 
 }
