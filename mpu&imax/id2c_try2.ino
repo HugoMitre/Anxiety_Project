@@ -14,28 +14,23 @@
 
 */
 
-
-//Import All reqired libaries for I2C, MAX30102 Sensor, MPU6050 sensor
-#include "MPU6050.h"
+#include <Wire.h> // I2C library
+#include "MPU6050.h" // MPU6050 library by adafruit
+#include "MAX30105.h" // MAX30105 library by sparkfun
 #include <stdio.h>
-#include <WiFi.h>
-#include <Wire.h> // used for both MPU6050  MAX30105 
-#include "MAX30105.h"
+#include <WiFi.h> 
 #include "spo2_algorithm.h"
 #include <ArduinoJson.h>
 
-MPU6050 gyro;
+MPU6050 gyro; // MPU6050 object
+MAX30105 particleSensor; // MAX30105 object
 
-
-const int MPU6050_addr = 0x68; // MPU6050 sensor configured on address 0x68 for I2C
 int16_t AccX, AccY, AccZ, Temp, GyroX, GyroY, GyroZ;
 const int numLect = 200;
 int gyroData[numLect], acelData[numLect], aceGData[numLect];
 
 WiFiClient client;
-MAX30105 particleSensor;
 
-const int MAX30102_adrr = 0x57;
 // wifi 
 const char* ssid = "Visitas";
 const char* password =  "Cimat2023";
@@ -65,26 +60,25 @@ byte pulseLED = 11; //Must be on PWM pin
 byte readLED = 6; //Blinks with each data read
 
 void setup() {
-void setup() {
-Serial.begin(115200);
+  Serial.begin(115200);
+  Wire.begin(); // Initialize I2C bus
 
-  // Initialize sensors
-  Wire.begin();
-
-  if (!checkMPU6050Connection()) {
-    Serial.println(F("MPU6050 was not found. Please check wiring/power."));
+  // Initialize MPU6050
+  gyro.initialize();
+  if (gyro.testConnection()) {
+    Serial.println("MPU6050 connected and initialized!");
+  } else {
+    Serial.println("MPU6050 connection failed!");
     while (1);
   }
-  
-  if (!checkMAX30102Connection()) {
-    Serial.println(F("MAX30105 was not found. Please check wiring/power."));
+
+  // Initialize MAX30105
+  if (particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+    Serial.println("MAX30105 connected and initialized!");
+  } else {
+    Serial.println("MAX30105 connection failed!");
     while (1);
   }
-  
-  Wire.beginTransmission(MPU6050_addr);
-  Wire.write(0x6B);
-  Wire.write(0);
-  Wire.endTransmission(true);
 
   byte ledBrightness = 255; //Options: 0=Off to 255=50mA - 60
   byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32 - 1 - checar con todos - 32
@@ -107,48 +101,31 @@ Serial.begin(115200);
 
   Serial.print("Conectado con éxito, mi IP es: ");
   Serial.print(WiFi.localIP());
-
 }
 
-// Functions to check sensor connections
-bool checkMPU6050Connection() {
-  Wire.beginTransmission(MPU6050_addr);
-  return (Wire.endTransmission() == 0);
-}
 
-bool checkMAX30102Connection() {
-  Wire.beginTransmission(MAX30102_adrr);
-  return (Wire.endTransmission() == 0);
-}
 
 void loop() {
-  Wire.beginTransmission(MPU6050_addr);
-  Wire.write(0x3B);
-  Wire.endTransmission(false);
-  Wire.requestFrom(MPU6050_addr, 14);
-  AccX = Wire.read() << 8 | Wire.read();
-  AccY = Wire.read() << 8 | Wire.read();
-  AccZ = Wire.read() << 8 | Wire.read();
-  Temp = Wire.read() << 8 | Wire.read();
-  GyroX = Wire.read() << 8 | Wire.read();
-  GyroY = Wire.read() << 8 | Wire.read();
-  GyroZ = Wire.read() << 8 | Wire.read();
-Serial.print("Giro: \t");
-  Serial.print(GyroX); Serial.print("\t");
-  Serial.print(GyroY); Serial.print("\t");
-  Serial.print(GyroZ); Serial.print("\t \t");
-  Serial.print("\n"); 
-  Serial.print("Giro: \t");
-  Serial.print(AccX); Serial.print("\t");
-  Serial.print(AccY); Serial.print("\t");
-  Serial.print(AccZ); Serial.print("\t \t");
-  Serial.print("\n"); 
-  delay(50);
-  
- /*Wire.beginTransmission(MAX30102_adrr);
-  //Wire.write();
-  //Wire.endTransmission(false);
+  // Read from MPU6050
+  int16_t gyroX, gyroY, gyroZ;
+  gyro.getRotation(&gyroX, &gyroY, &gyroZ);
 
+  Serial.print("MPU6050 Gyro: ");
+  Serial.print("X = "); Serial.print(gyroX);
+  Serial.print(", Y = "); Serial.print(gyroY);
+  Serial.print(", Z = "); Serial.println(gyroZ);
+
+  // Read from MAX30105
+  uint32_t redValue = particleSensor.getRed();
+  uint32_t irValue = particleSensor.getIR();
+
+  Serial.print("MAX30105 Red Value: ");
+  Serial.print(redValue);
+  Serial.print(", IR Value: ");
+  Serial.println(irValue);
+
+  // codigo de Luis
+  /*
   bufferLength = 100; //buffer length of 100 stores 4 seconds of samples running at 25sps
 
   //read the first 100 samples, and determine the signal range
@@ -268,5 +245,7 @@ Serial.print("Giro: \t");
     maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
   }*/
 
+
+  delay(50); // Delay between readings
 
 }
