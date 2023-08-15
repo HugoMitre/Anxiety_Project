@@ -31,6 +31,8 @@
 
 // WIFI
 #include <WiFi.h>
+// #include <WiFiMulti.h>
+// #include <HTTPClient.h>
 
 // REAL TIME (INTERN MODULE)
 #include "rtc_datetime.h"
