@@ -1,20 +1,37 @@
 from collections import deque
 import pymongo
 import matplotlib.pyplot as plt
-import numpy as np
+import copy
 
 # Conectarse a la base de datos local de MongoDB
 client = pymongo.MongoClient('mongodb://localhost:27017')
 db = client['sensorData'] # Nombre de la base de datos
 collection = db['reads'] # Nombre de la colección
 
-datos = deque(maxlen = 100)
+data = deque(maxlen = 100)
 
-for i in collection.find().sort('time', pymongo.ASCENDING):
-    datos.append(i['ir'])
-    print(datos)
-    plt.clf()
-    plt.plot(datos)
-    plt.pause(0.1)
+previous_query = list()
+
+while(True):
+    current_query = list(collection.find().sort('time', pymongo.ASCENDING))
+
+    if len(current_query) != len(previous_query):
+        query1_ids = set(result['_id'] for result in current_query)
+        query2_ids = set(result['_id'] for result in previous_query)
+
+        new_ids = query1_ids - query2_ids
+        new_documents = [doc for doc in current_query if doc['_id'] in new_ids]
+
+        for i in new_documents:
+            data.append(i['ir'])
+            plt.clf()
+            plt.plot(data)
+            plt.pause(0.01)
+
+    previous_query = current_query.copy()
+    plt.pause(1)
+
+    if not plt.get_fignums():
+        break
 
 client.close()  # Cerrar la conexión a la base de datos

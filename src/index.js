@@ -13,6 +13,7 @@ app.set('views', 'src/views');
 app.set('view engine', 'ejs');
 
 // Middelware
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());    // Posibilidad de trabajar con archivos json
 app.use(morgan('dev'));
 

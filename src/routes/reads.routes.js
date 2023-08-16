@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const readsCtrl = require('../controllers/reads.controller');
 
-router.get('/', readsCtrl.getData);
+// router.get('/', readsCtrl.getData);
 router.post('/', readsCtrl.saveData);
 
 module.exports = router;
