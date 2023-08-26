@@ -8,7 +8,7 @@ D:
 cd \Tesis\api-arduino
 start /min cmd /c "npm run start"
 
-start /min cmd /c "python3 graficaion.py"
+start http://localhost:3000/api/reads/
 
 REM Mensaje personalizado antes de la espera
 echo Se esta ejecutando la base de datos y el servicio de API para enviar los datos a MONGO.

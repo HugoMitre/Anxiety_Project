@@ -6,9 +6,10 @@ const readsSchema = new Schema({
     red: { type: Number },
     ir: { type: Number },
     hr: { type: Number },
-    validHR: {type: Number},
     spo2: { type: Number },
-    validSpo2: {type: Number}
+    gyroX: {type: Number},
+    gyroY: {type: Number},
+    gyroZ: {type: Number}
 });
 
 module.exports = mongoose.model('reads', readsSchema);
