@@ -37,9 +37,9 @@
 #include <ESP32Time.h>
 
 // WIFI
-const char* ssid = "Visitas";
-const char* password =  "Cimat2023";
-const char* serverAddress = "192.168.1.77";
+const char* ssid = "INFINITUM2613_2.4";
+const char* password =  "MGVfuQ2nwP";
+const char* serverAddress = "192.168.1.80";
 const int serverPort = 3000;
 const char* apiEndpoint = "/api/reads";
 
@@ -85,7 +85,7 @@ void setup()
   // while (Serial.available() == 0) ; //wait until user presses a key
   // Serial.read();
 
-  byte ledBrightness = 60; //Options: 0=Off to 255=50mA
+  byte ledBrightness = 80; //Options: 0=Off to 255=50mA
   byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, _32
   byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
   byte sampleRate = 800; //Options: 50, 100, 200, 400, 800, _1000, 1600, 3200

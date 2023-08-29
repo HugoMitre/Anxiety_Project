@@ -4,7 +4,9 @@ const ExcelJS = require('exceljs');
 const phaseCtrl = {};
 
 phaseCtrl.saveSensorData = async(req, res) => {
-    const data = await reads.find({}).toArray();
+    const data = await reads.find().exec();
+    console.log(data);
+
     await reads.collection.drop();
 
     console.log(req.body);
@@ -28,7 +30,7 @@ phaseCtrl.saveSensorData = async(req, res) => {
         { header: 'Red', key: 'red', width: 10 },
         { header: 'HR', key: 'hr', width: 10 },
         { header: 'SpO2', key: 'spo2', width: 10 },
-        { header: 'Gyro', key: 'gyro', width: 10 },
+        // { header: 'Gyro', key: 'gyro', width: 10 },
     ];
 
     // Agrega los datos a la hoja de cálculo
@@ -39,7 +41,7 @@ phaseCtrl.saveSensorData = async(req, res) => {
         red: row.red,
         hr: row.hr,
         spo2: row.spo2,
-        gyro: row.gyro
+        // gyro: row.gyro
         });
     });
 
