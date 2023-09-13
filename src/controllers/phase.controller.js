@@ -7,7 +7,7 @@ phaseCtrl.saveSensorData = async(req, res) => {
     const data = await reads.find().exec();
     console.log(data);
 
-    await reads.collection.drop();
+    // await reads.collection.drop();
 
     console.log(req.body);
 
@@ -45,11 +45,18 @@ phaseCtrl.saveSensorData = async(req, res) => {
         });
     });
 
+    const fecha = new Date();
+
+    // Obtiene el mes y el día
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0'); // El mes se suma 1 ya que los meses se indexan desde 0
+    const dia = fecha.getDate().toString().padStart(2, '0');
+
+
     // Genera un nombre de archivo único 
-    const fileName = `${req.body.subject}_${req.body.phase}_${Date.now()}.xlsx`;
+    const fileName = `${req.body.subject}_${req.body.phase}_${dia}-${mes}.xlsx`;
 
     // Guarda el archivo en el servidor y envía el enlace de descarga al cliente
-    await workbook.xlsx.writeFile(fileName);
+    await workbook.xlsx.writeFile(`saves/${fileName}`);
 
     res.redirect('/api/phase');
 }
