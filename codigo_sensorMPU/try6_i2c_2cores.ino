@@ -31,12 +31,13 @@ WiFiClient client;
 byte pulseLED = 11; //Must be on PWM pin
 byte readLED = 6; //Blinks with each data read
 
-// wifi 
+// Wifi 
 const char* ssid = "Visitas";
 const char* password =  "Cimat2023";
 const char* serverAddress = "10.13.200.44";
 const int serverPort = 3000;
-const char* apiEndpoint = "/api/reads";
+const char* apiReads = "/api/reads";
+const char* apiGyro = "/api/gyro";
 
 #define MAX_BRIGHTNESS 255
 
@@ -101,6 +102,54 @@ void mpuTask(void *parameter) {
     Serial.print("MPU6050 Task Stack Usage: ");
     Serial.println(mpuStackUsage);
 
+    // PETICION POST PARA ALMACENAR LOS DATOS EN LA BD
+    if(WiFi.status() == WL_CONNECTED) {
+      // Tamaño máximo del JSON, ajusta según tus necesidades
+      DynamicJsonDocument jsonDocument(1024);
+
+      jsonDocument["gyroX"] = String(gyroX);
+      jsonDocument["gyroY"] = String(gyroY);
+      jsonDocument["gyroZ"] = String(gyroZ);
+      jsonDocument["gyroX_hat"] = String(filteredGyroX);
+      jsonDocument["gyroY_hat"] = String(filteredGyroY);
+      jsonDocument["gyroZ_hat"] = String(filteredGyroZ);
+      jsonDocument["accelX"] = String(aX);
+      jsonDocument["accelY"] = String(aY);
+      jsonDocument["accelZ"] = String(aZ);
+      jsonDocument["accelX_hat"] = String(filteredAccelX);
+      jsonDocument["accelY_hat"] = String(filteredAccelY);
+      jsonDocument["accelZ_hat"] = String(filteredAccelZ);
+
+      String jsonString;
+      serializeJson(jsonDocument, jsonString);
+
+      if (client.connect(serverAddress, serverPort)) {
+        
+        // Crea la solicitud POST
+        String request = "POST " + String(apiGyro) + " HTTP/1.1\r\n";
+        request += "Host: " + String(serverAddress) + "\r\n";
+        request += "Content-Type: application/json\r\n";
+        request += "Content-Length: " + String(jsonString.length()) + "\r\n";
+        request += "Connection: close\r\n\r\n";
+        request += jsonString;
+
+        // Envía la solicitud al servidor
+        client.print(request);
+
+        // Lee y muestra la respuesta del servidora
+        while (client.available()) {
+          String line = client.readStringUntil('\r');
+          Serial.print(line);
+        }
+
+        // Cierra la conexión
+        client.stop();
+      } else {
+        Serial.println("Error al conectar al servidor");
+      }
+    }else{
+      Serial.println("Error en la conexión WIFI");
+    }
     vTaskDelay(500 / portTICK_PERIOD_MS); // Delay between readings
   }
 }
@@ -154,83 +203,64 @@ void maxTask(void *parameter) {
 
         //send samples and calculation result to terminal program through UART
 
-        Serial.print(F("RED: "));
-        Serial.print(redBuffer[i], DEC);
-        Serial.print(F(", IR: "));
-        Serial.print(irBuffer[i], DEC);
-
-        // Serial.print(F("red="));
-        // Serial.print(redBuffer[i], DEC);
-        // Serial.print(F(", ir="));
-        // Serial.print(irBuffer[i], DEC);
-
-        Serial.print(F(", HR: "));
-        Serial.print(heartRate, DEC);
-        // Serial.print(F(","));
-
-        Serial.print(F(", HRvalid: "));
-        Serial.print(validHeartRate, DEC);
-        // Serial.print(F(","));
-
-        Serial.print(F(", SPO2: "));
-        Serial.print(spo2, DEC);
-        // Serial.print(F(","));
-
-        Serial.print(F(", SPO2Valid: "));
-        Serial.println(validSPO2, DEC);
-        // Serial.println(F(";"));
+        Serial.print(F("RED: "));Serial.print(redBuffer[i], DEC);
+        Serial.print(F(", IR: "));Serial.print(irBuffer[i], DEC);
+        Serial.print(F(", HR: "));Serial.print(heartRate, DEC);
+        Serial.print(F(", HRvalid: "));Serial.print(validHeartRate, DEC);
+        Serial.print(F(", SPO2: "));Serial.print(spo2, DEC);
+        Serial.print(F(", SPO2Valid: "));Serial.println(validSPO2, DEC);
 
         // PETICION POST PARA ALMACENAR LOS DATOS EN LA BD
         if(WiFi.status() == WL_CONNECTED) {
           // Tamaño máximo del JSON, ajusta según tus necesidades
-        DynamicJsonDocument jsonDocument(1024);
+          DynamicJsonDocument jsonDocument(1024);
 
-        jsonDocument["red"] = String(redBuffer[i]);
-        jsonDocument["ir"] = String(irBuffer[i]);
-        jsonDocument["hr"] = String(heartRate);
-        jsonDocument["validHR"] = String(validHeartRate);
-        jsonDocument["spo2"] = String(spo2);
-        jsonDocument["validSpo2"] = String(validSPO2);
+          jsonDocument["red"] = String(redBuffer[i]);
+          jsonDocument["ir"] = String(irBuffer[i]);
+          jsonDocument["hr"] = String(heartRate);
+          jsonDocument["validHR"] = String(validHeartRate);
+          jsonDocument["spo2"] = String(spo2);
+          jsonDocument["validSpo2"] = String(validSPO2);
 
-        String jsonString;
-        serializeJson(jsonDocument, jsonString);
+          String jsonString;
+          serializeJson(jsonDocument, jsonString);
 
-        if (client.connect(serverAddress, serverPort)) {
-          
-          // Crea la solicitud POST
-          String request = "POST " + String(apiEndpoint) + " HTTP/1.1\r\n";
-          request += "Host: " + String(serverAddress) + "\r\n";
-          request += "Content-Type: application/json\r\n";
-          request += "Content-Length: " + String(jsonString.length()) + "\r\n";
-          request += "Connection: close\r\n\r\n";
-          request += jsonString;
+          if (client.connect(serverAddress, serverPort)) {
+            
+            // Crea la solicitud POST
+            String request = "POST " + String(apiReads) + " HTTP/1.1\r\n";
+            request += "Host: " + String(serverAddress) + "\r\n";
+            request += "Content-Type: application/json\r\n";
+            request += "Content-Length: " + String(jsonString.length()) + "\r\n";
+            request += "Connection: close\r\n\r\n";
+            request += jsonString;
 
-          // Envía la solicitud al servidor
-          client.print(request);
+            // Envía la solicitud al servidor
+            client.print(request);
 
-          // Lee y muestra la respuesta del servidora
-          while (client.available()) {
-            String line = client.readStringUntil('\r');
-            Serial.print(line);
+            // Lee y muestra la respuesta del servidora
+            while (client.available()) {
+              String line = client.readStringUntil('\r');
+              Serial.print(line);
+            }
+
+            // Cierra la conexión
+            client.stop();
+          } else {
+            Serial.println("Error al conectar al servidor");
           }
-
-          // Cierra la conexión
-          client.stop();
-        } else {
-          Serial.println("Error al conectar al servidor");
+        }else{
+          Serial.println("Error en la conexión WIFI");
         }
-      }else{
-        Serial.println("Error en la conexión WIFI");
+        delay(5);
       }
-      delay(50); // cambio a 50 por problemas de sincronizacion
-    }
 
       //After gathering 25 new samples recalculate HR and SP02
       maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
       // ... Read MAX30105 data, calculations, and JSON POST
       // Print stack usage
       UBaseType_t maxStackUsage = uxTaskGetStackHighWaterMark(maxTaskHandle);
-      Serial.print("MAX30105 Task Stack Usage: ");
+      Serial.print("MAX30102 Task Stack Usage: ");
       Serial.println(maxStackUsage);
 
       vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for 2 seconds
