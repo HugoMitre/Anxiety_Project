@@ -29,9 +29,9 @@
 MPU6050 gyro; // MPU6050 object
 MAX30105 particleSensor; // MAX30105 object
 
-int16_t AccX, AccY, AccZ, Temp, GyroX, GyroY, GyroZ;
+/*int16_t AccX, AccY, AccZ, Temp, GyroX, GyroY, GyroZ;
 const int numLect = 200;
-int gyroData[numLect], acelData[numLect], aceGData[numLect];
+int gyroData[numLect], acelData[numLect], aceGData[numLect];*/
 
 WiFiClient client;
 
