@@ -150,20 +150,36 @@ void loop() {
   // Read from MPU6050
   int16_t gyroX, gyroY, gyroZ;
   int16_t accelX, accelY, accelZ;
-  const float 
+  const float alpha =0.2;
+  float fgX, fgY, fgZ;
+  float faX, faY, faZ;
 
   gyro.getRotation(&gyroX, &gyroY, &gyroZ);
   gyro.getAcceleration(&accelX, &accelY, &accelZ);
 
+  //datos convertidos de aceleracion m/s^2 a cm/s^2 
+  float aX = accelX * 9.81 / 16384.0;
+  float aY = accelY * 9.81 / 16384.0;
+  float aZ = accelZ * 9.81 / 16384.0;
+
+  // datos giro filtrados
+  fgX = alpha * gyroX + (1 - alpha) * fgX;
+  fgY = alpha * gyroY + (1 - alpha) * fgY;
+  fgZ = alpha * gyroZ + (1 - alpha) * fgZ;
+
+  faX = alpha * aX + (1 - alpha) * faX;
+  faY = alpha * aY + (1 - alpha) * faY;
+  faZ = alpha * aZ + (1 - alpha) * faZ;
+
   Serial.print("MPU6050 Gyro: ");
-  Serial.print("X = "); Serial.print(gyroX);
-  Serial.print(", Y = "); Serial.print(gyroY);
-  Serial.print(", Z = "); Serial.println(gyroZ);
+  Serial.print("X = "); Serial.print(fgX);
+  Serial.print(", Y = "); Serial.print(fgY);
+  Serial.print(", Z = "); Serial.println(fgZ);
 
   Serial.print("MPU6050 Accel: ");
-  Serial.print("X = "); Serial.print(accelX);
-  Serial.print(", Y = "); Serial.print(accelY);
-  Serial.print(", Z = "); Serial.println(accelZ);  // falta el filtro de ambos datos 
+  Serial.print("X = "); Serial.print(faX);
+  Serial.print(", Y = "); Serial.print(faY);
+  Serial.print(", Z = "); Serial.println(faZ);  // falta el filtro de ambos datos 
 
   // Read from MAX30105
   uint32_t redValue = particleSensor.getRed();
@@ -184,10 +200,14 @@ void loop() {
     jsonDocument["ir"] = String(irValue);
     // jsonDocument["hr"] = heartRate;
     // jsonDocument["spo2"] = spo2;
-    jsonDocument["gyroX"] = gyroX;
-    jsonDocument["gyroY"] = gyroY;
-    jsonDocument["gyroZ"] = gyroZ;
-    
+    jsonDocument["gyroX"] = fgX;
+    jsonDocument["gyroY"] = fgY;
+    jsonDocument["gyroZ"] = fgZ;
+    //agregar datos de aceleracion 
+    jsonDocument["accelX"] = faX;
+    jsonDocument["accelY"] = faY;
+    jsonDocument["accelZ"] = faZ;
+
     String jsonString;
     serializeJson(jsonDocument, jsonString);
 
