@@ -65,7 +65,7 @@ int32_t heartRate; //heart rate value
 int8_t validHeartRate; //indicator to show if the heart rate calculation is valid
 
 byte pulseLED = 11; //Must be on PWM pin
-byte readLED = 6; //Blinks with each data read
+byte readLED = 13; //Blinks with each data read
 
 void setup() {
   Serial.begin(115200);
@@ -149,12 +149,20 @@ void setup() {
 void loop() {
   // Read from MPU6050
   int16_t gyroX, gyroY, gyroZ;
+  int16_t accelX, accelY, accelZ;
+
   gyro.getRotation(&gyroX, &gyroY, &gyroZ);
+  gyro.getAcceleration(&accelX, &accelY, &accelZ);
 
   Serial.print("MPU6050 Gyro: ");
   Serial.print("X = "); Serial.print(gyroX);
   Serial.print(", Y = "); Serial.print(gyroY);
   Serial.print(", Z = "); Serial.println(gyroZ);
+
+  Serial.print("MPU6050 Accel: ");
+  Serial.print("X = "); Serial.print(accelX);
+  Serial.print(", Y = "); Serial.print(accelY);
+  Serial.print(", Z = "); Serial.println(accelZ);  // falta el filtro de ambos datos 
 
   // Read from MAX30105
   uint32_t redValue = particleSensor.getRed();
