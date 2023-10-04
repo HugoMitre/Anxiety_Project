@@ -41,7 +41,7 @@
 // const char* password =  "MGVfuQ2nwP";
 const char* ssid = "Visitas";
 const char* password =  "Cimat2023";
-const char* serverAddress = "192.168.1.80";
+const char* serverAddress = "192.168.1.40";
 const int serverPort = 3000;
 const char* apiEndpoint = "/api/reads";
 
@@ -51,6 +51,7 @@ WiFiClient client;
 ESP32Time rtc;  // Creat a structure type ESP32Time
 // Variables to get 
 int year, month, day, hour, minute, second;
+IPAddress ip;   // the IP address of your shield
 
 MAX30105 particleSensor;
 
@@ -107,7 +108,8 @@ void setup()
   }
 
   Serial.print("Successful connection, my IP: ");
-  Serial.print(WiFi.localIP());
+  ip = WiFi.localIP();
+  Serial.println(ip);
 
   // GETTING REAL DATETIME
   String jsonBody;
@@ -183,35 +185,14 @@ void loop()
 
     //send samples and calculation result to terminal program through UART
 
-    Serial.print("TIME: ");
-    Serial.print(rtc.getTime() + "." + String(rtc.getMillis()));
-
-    Serial.print(F(", RED: "));
-    Serial.print(redBuffer[i], DEC);
-    Serial.print(F(", IR: "));
-    Serial.print(irBuffer[i], DEC);
-
-    // Serial.print(F("red="));
-    // Serial.print(redBuffer[i], DEC);
-    // Serial.print(F(", ir="));
-    // Serial.print(irBuffer[i], DEC);
-
-    Serial.print(F(", HR: "));
-    Serial.print(heartRate, DEC);
-    // Serial.print(F(","));
-
-    Serial.print(F(", HRvalid: "));
-    Serial.print(validHeartRate, DEC);
-    // Serial.print(F(","));
-
-    Serial.print(F(", SPO2: "));
-    Serial.print(spo2, DEC);
-    // Serial.print(F(","));
-
-    Serial.print(F(", SPO2Valid: "));
-    Serial.println(validSPO2, DEC);
-    // Serial.println(F(";"));
-
+    Serial.print("TIME: ");Serial.print(rtc.getTime() + "." + String(rtc.getMillis()));
+    Serial.print(F(", RED: "));Serial.print(redBuffer[i], DEC);
+    Serial.print(F(", IR: "));Serial.print(irBuffer[i], DEC);
+    Serial.print(F(", HR: "));Serial.print(heartRate, DEC);
+    Serial.print(F(", HRvalid: "));Serial.print(validHeartRate, DEC);
+    Serial.print(F(", SPO2: "));Serial.print(spo2, DEC);
+    Serial.print(F(", SPO2Valid: "));Serial.println(validSPO2, DEC);
+    
     // REQUEST POST TO SAVE THE DATA IN DB
     // if(WiFi.status() == WL_CONNECTED) {
     //   DynamicJsonDocument jsonDocument(1024);

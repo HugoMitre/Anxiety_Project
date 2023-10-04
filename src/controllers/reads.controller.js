@@ -8,6 +8,7 @@ const readsCtrl = {};
 // }
 
 readsCtrl.saveData = async(req, res) => {
+    console.log(req);
     const lectura = new reads(req.body);
     await lectura.save();
 

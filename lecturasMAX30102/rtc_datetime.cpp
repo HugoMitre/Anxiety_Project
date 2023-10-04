@@ -3,7 +3,7 @@
 
 void extractTimeFromJson(const String& json, int& year, int& month, int& day, int& hour, int& minute, int& second) {
   // Buscar la posición de la cadena "datetime"
-  int datetimeIndex = json.indexOf("datetime\":\"");
+  int datetimeIndex = json.indexOf("\"datetime\":\"");
   const char* datetime_str;
 
   if (datetimeIndex != -1) {

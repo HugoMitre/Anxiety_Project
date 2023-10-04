@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
-const readsSchema = new Schema({
+const gyroSchema = new Schema({
+    time: {type: String},
     gyroX: { type: Number },
     gyroY: { type: Number },
     gyroZ: { type: Number },

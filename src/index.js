@@ -5,6 +5,7 @@ const app = express();
 
 const phaseRoutes = require("./routes/phase.routes");
 const readsRoutes = require("./routes/reads.routes");
+const gyroRoutes = require("./routes/gyro.routes");
 const {mongoose} = require('./database');
 
 // Settings
@@ -20,6 +21,7 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/phase',phaseRoutes);
 app.use('/api/reads',readsRoutes);
+app.use('/api/gyro',gyroRoutes);
 
 
 app.listen(port, ()=> console.log('Server listening on port: ', port));

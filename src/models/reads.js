@@ -3,13 +3,12 @@ const {Schema} = mongoose;
 
 const readsSchema = new Schema({
     time: { type: String },
-    red: { type: Number },
-    ir: { type: Number },
-    hr: { type: Number },
-    spo2: { type: Number },
-    gyroX: {type: Number},
-    gyroY: {type: Number},
-    gyroZ: {type: Number}
+    red: { type: String },
+    ir: { type: String },
+    hr: { type: String },
+    validHr: {type: String},
+    spo2: { type: String },
+    validSpo2: {type: String},
 });
 
 module.exports = mongoose.model('reads', readsSchema);
